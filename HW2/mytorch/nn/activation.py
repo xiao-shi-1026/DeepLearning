@@ -1,6 +1,8 @@
 """
 This document defines common activation functions.
 """
+
+
 import numpy as np
 import scipy
 

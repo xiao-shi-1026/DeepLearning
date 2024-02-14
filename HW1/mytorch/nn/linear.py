@@ -9,8 +9,8 @@ class Linear:
         Checkout np.zeros function.
         Read the writeup to identify the right shapes for all.
         """
-        self.W = None  # TODO
-        self.b = None  # TODO
+        self.W = np.zeros((out_features, in_features))  # TODO
+        self.b = np.zeros((out_features, 1))  # TODO
 
         self.debug = debug
 
@@ -20,22 +20,24 @@ class Linear:
         :return: Output Z of linear layer with shape (N, C1)
         Read the writeup for implementation details
         """
-        self.A = None  # TODO
-        self.N = None  # TODO store the batch size of input
+        self.A = A
+        self.N = A.shape[0]  # store the batch size of input
         # Think how will self.Ones helps in the calculations and uncomment below
-        # self.Ones = np.ones((self.N,1))
-        Z = None  # TODO
+        self.Ones = np.ones((self.N, 1))
+        self.Z = self.A @ self.W.T + self.Ones * self.b.T
 
-        return NotImplemented
+        return self.Z
 
-    def backward(self, dLdZ):
-
-        dLdA = None  # TODO
-        self.dLdW = None  # TODO
-        self.dLdb = None  # TODO
+    def backward(self, dLdZ) -> np.array:
+        """
+        :param dLdZ: The e derivative of the loss with respect to Y, shape (N, C0)
+        """
+        dLdA = dLdZ @ self.W
+        self.dLdW = dLdZ.T @ self.A
+        self.dLdb = dLdZ.T @ self.Ones
 
         if self.debug:
             
             self.dLdA = dLdA
-
-        return NotImplemented
+        
+        return dLdA

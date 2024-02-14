@@ -25,33 +25,36 @@ class BatchNorm1d:
         So see what values you need to recompute when eval is False.
         """
         self.Z = Z
-        self.N = None  # TODO
-        self.M = None  # TODO
-        self.V = None  # TODO
+        self.N = self.Z.shape[0]  # batch size
+        self.M = np.mean(Z, axis = 0).reshape((1, self.Z.shape[1]))  # mini-batch per feature mean
+        self.V = np.var(Z, axis = 0).reshape((1, self.Z.shape[1]))  # mini-batch per feature variance
 
         if eval == False:
             # training mode
-            self.NZ = None  # TODO
-            self.BZ = None  # TODO
+            self.NZ = (self.Z - np.ones((self.Z.shape[0], 1)) @ self.M) / (np.ones((self.Z.shape[0], 1)) @ np.sqrt(self.V + self.eps))
+            self.BZ = self.NZ * (np.ones((self.Z.shape[0], 1)) @ self.BW) + np.ones((self.Z.shape[0], 1)) @ self.Bb
 
-            self.running_M = None  # TODO
-            self.running_V = None  # TODO
+            self.running_M = self.alpha * self.running_M + (1 - self.alpha) * self.M
+            self.running_V = self.alpha * self.running_V + (1 - self.alpha) * self.V
         else:
             # inference mode
-            self.NZ = None  # TODO
-            self.BZ = None  # TODO
+            self.NZ = (self.Z - np.ones((self.Z.shape[0], 1)) @ self.running_M) / (np.ones((self.Z.shape[0], 1)) @ np.sqrt(self.running_V + self.eps))
+            self.BZ = self.NZ * (np.ones((self.Z.shape[0], 1)) @ self.BW) + (np.ones((self.Z.shape[0], 1)) @ self.Bb)
 
         return self.BZ
 
     def backward(self, dLdBZ):
 
-        self.dLdBW = None  # TODO
-        self.dLdBb = None  # TODO
+        self.dLdBW = np.ones((1,self.N)) @ dLdBZ
 
-        dLdNZ = None  # TODO
-        dLdV = None  # TODO
-        dLdM = None  # TODO
+        self.dLdBb = np.ones((1,self.N)) @ (dLdBZ * self.NZ)
 
-        dLdZ = None  # TODO
+        dLdNZ = dLdBZ * self.BW
 
-        return NotImplemented
+        dLdV = -0.5 * (np.ones((1, self.N)) @ (dLdNZ * (self.Z - self.M) * ((self.V + self.eps) ** (-3/2))))
+        
+        dLdM = np.ones((1, self.N)) @ (dLdNZ * (-(self.V + self.eps) ** (-0.5) - 0.5 * (self.Z - self.M) * ((self.V + self.eps) ** (-3/2)) * (-2 / self.N) * (np.ones((1, self.N)) @ (self.Z - self.M))))
+
+        dLdZ = dLdNZ * ((self.V + self.eps) ** (-1/2)) + dLdV * (2 / self.N) * (self.Z - self.M) + (1 / self.N) * dLdM
+
+        return dLdZ

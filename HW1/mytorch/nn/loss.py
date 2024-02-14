@@ -3,7 +3,7 @@ import numpy as np
 
 class MSELoss:
 
-    def forward(self, A, Y):
+    def forward(self, A, Y) -> float:
         """
         Calculate the Mean Squared error
         :param A: Output of the model of shape (N, C)
@@ -14,24 +14,24 @@ class MSELoss:
 
         self.A = A
         self.Y = Y
-        self.N = None  # TODO
-        self.C = None  # TODO
-        se = None  # TODO
-        sse = None  # TODO
-        mse = None  # TODO
+        self.N = A.shape[0]
+        self.C = A.shape[1]
+        se = (self.A - self.Y) * (self.A - self.Y)
+        sse = np.ones(self.N).T @ se @np.ones(self.C)
+        mse = sse / (self.N * self.C)
 
-        return NotImplemented
+        return mse
 
-    def backward(self):
+    def backward(self) -> np.array:
 
-        dLdA = None
+        dLdA = 2 * (self.A - self.Y) / (self.N * self.C)
 
-        return NotImplemented
+        return dLdA
 
 
 class CrossEntropyLoss:
 
-    def forward(self, A, Y):
+    def forward(self, A, Y) -> float:
         """
         Calculate the Cross Entropy Loss
         :param A: Output of the model of shape (N, C)
@@ -43,21 +43,21 @@ class CrossEntropyLoss:
         """
         self.A = A
         self.Y = Y
-        N = None  # TODO
-        C = None  # TODO
+        N = self.A.shape[0]  # TODO
+        C = self.A.shape[1]  # TODO
 
-        Ones_C = None  # TODO
-        Ones_N = None  # TODO
+        Ones_C = np.ones((C, 1))  # TODO
+        Ones_N = np.ones((N, 1))  # TODO
 
-        self.softmax = None  # TODO
-        crossentropy = None  # TODO
-        sum_crossentropy = None  # TODO
+        self.softmax = np.exp(A) / (np.exp(A) @ Ones_C)
+        crossentropy = (-self.Y * np.log(self.softmax)) @ Ones_C  # TODO
+        sum_crossentropy = Ones_N.T @ crossentropy  # TODO
         L = sum_crossentropy / N
 
-        return NotImplemented
+        return L
 
-    def backward(self):
+    def backward(self) -> np.array:
 
-        dLdA = None  # TODO
+        dLdA = (self.softmax - self.Y) / self.A.shape[0] # TODO
 
-        return NotImplemented
+        return dLdA

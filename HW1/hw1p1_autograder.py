@@ -633,7 +633,7 @@ if DEBUG_AND_GRADE_MLP0:
         dLdb0_ = mlp0.layers[0].dLdb
 
         # Compare the student answer with the correct answer
-  
+
         if np.allclose(dLdZ0, dLdZ0_, atol=atol_threshold)==False:
             TEST_mlp0_dLdZ0=False
 

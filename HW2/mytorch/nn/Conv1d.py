@@ -35,10 +35,13 @@ class Conv1d_stride1():
             Z (np.array): (batch_size, out_channels, output_size)
         """
         self.A = A
+        Z = np.ones((self.A.shape[0], self.W.shape[0], self.A.shape[2] - self.W.shape[2] + 1))
+        for i in range(self.A.shape[0]):
+            for j in range(Z.shape[2]):
+                tmp = self.A[i, ..., j:j + self.W.shape[2]]
+                Z[i,...,j] = np.tensordot(tmp, self.W, axes = ([0, 1],[1, 2])).shape
 
-        Z = None  # TODO
-
-        return NotImplemented
+        return Z + self.b
 
     def backward(self, dLdZ):
         """

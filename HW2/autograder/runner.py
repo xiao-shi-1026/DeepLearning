@@ -1670,10 +1670,6 @@ def test_conv1d_model():
 
 
 # TODO: add tests here with names and calling the functions.
-def run_tests(tests):
-    for i in tests:
-        i['handler']
-
 # 'autolab' is the name on autolab I think, but you probably won't need to worry about it.
 # The test functions should return True or False.
 tests = [
@@ -1785,4 +1781,5 @@ tests = [
 
 if __name__ == '__main__':
     # np.random.seed(2021)
+
     run_tests(tests)

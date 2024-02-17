@@ -31,17 +31,23 @@ class Conv1d_stride1():
         """
         Argument:
             A (np.array): (batch_size, in_channels, input_size)
+            batch_size: how many data points in the batch
+            in_channel: for each data point, how many channels are used to describe the data
+            input_size: How much "basic units" are in one data point. For example, a pixel is a basic unit in a picture.
         Return:
             Z (np.array): (batch_size, out_channels, output_size)
+            output_size: when stride = 1, output_size = input_size - kernel_size + 1
         """
         self.A = A
-        Z = np.ones((self.A.shape[0], self.W.shape[0], self.A.shape[2] - self.W.shape[2] + 1))
-        for i in range(self.A.shape[0]):
-            for j in range(Z.shape[2]):
-                tmp = self.A[i, ..., j:j + self.W.shape[2]]
-                Z[i,...,j] = np.tensordot(tmp, self.W, axes = ([0, 1],[1, 2])).shape
+        Z = np.zeros((self.A.shape[0], self.W.shape[0], self.A.shape[2] - self.W.shape[2] + 1))
+        for i in range(self.A.shape[0]): # for every datapoint
+            for j in range(Z.shape[2]): # for z_j, as stride = 1, only scan size Z times.
+                tmp = self.A[i, ..., j:j + self.W.shape[2]] # get the current slice of A
 
-        return Z + self.b
+                 # tmp (1, input_channel, slice_size(kernel_size)), W (output_channel, input_channel, kernel_size)
+                Z[i,...,j] = np.tensordot(tmp, self.W, axes = ([0, 1],[1, 2])) # Z (batch_size, out_channels, output_size)
+
+        return Z + self.b.reshape(1, self.b.shape[0], 1)
 
     def backward(self, dLdZ):
         """
@@ -51,15 +57,36 @@ class Conv1d_stride1():
             dLdA (np.array): (batch_size, in_channels, input_size)
         """
 
-        self.dLdW = None  # TODO
-        self.dLdb = None  # TODO
-        dLdA = None  # TODO
+        self.dLdW = np.zeros(self.W.shape)
 
-        return NotImplemented
+        # calculate dLdW
+        for i in range(self.A.shape[0]):
+            tmp_dLdW = np.zeros(self.W.shape)
+            for j in range(self.dLdW.shape[2]):
+                tmp = self.A[i, ..., j:j + dLdZ.shape[2]] # tmp (input_channel, slice_size(dLdZ output_size))
+                tmp_dLdW[..., j] = np.tensordot(dLdZ[i], tmp, axes = (1,1)) # dLdZ(out_channels, output_size), dLdW(output_channel, input_channel, kernel_size)
+            self.dLdW = self.dLdW + tmp_dLdW
+        # calculate dLdb
+        # dLdb (output_channel, )
+        self.dLdb = np.sum(dLdZ, axis = (0,2))
+        
+        # calculate dLdA
+        dLdA = np.zeros(self.A.shape)
+        padded_dLdZ = np.zeros((dLdZ.shape[0], dLdZ.shape[1], dLdA.shape[2] + self.kernel_size - 1))
+
+        padded_dLdZ[..., self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[2]] = dLdZ # pad dLdZ, each side for each channel, pad kernel_size - 1 zeros.
+        Flipped_W = self.W[..., ::-1]
+
+        for i in range(padded_dLdZ.shape[0]): # for each data point
+            for j in range(dLdA.shape[2]):
+                tmp = padded_dLdZ[i, ..., j:j + Flipped_W.shape[2]] # tmp (output_channel, kernel_size)
+                dLdA[i, ..., j] = np.tensordot(tmp, Flipped_W, axes = ([0, 1],[0, 2])) #Flipped_W(output_channel, input_channel, kernel_size)
+
+        return dLdA
 
 
 class Conv1d():
-    def __init__(self, in_channels, out_channels, kernel_size, stride,padding = 0,
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding = 0,
                  weight_init_fn=None, bias_init_fn=None):
         # Do not modify the variable names
 
@@ -67,8 +94,8 @@ class Conv1d():
         self.pad = padding
 
         # Initialize Conv1d() and Downsample1d() isntance
-        self.conv1d_stride1 = None  # TODO
-        self.downsample1d = None  # TODO
+        self.conv1d_stride1 = Conv1d_stride1(in_channels, out_channels, kernel_size, weight_init_fn, bias_init_fn)
+        self.downsample1d = Downsample1d(stride)
 
     def forward(self, A):
         """
@@ -79,15 +106,15 @@ class Conv1d():
         """
 
         # Pad the input appropriately using np.pad() function
-        # TODO
+        A = np.pad(A, pad_width = ((0, 0), (0, 0), (self.pad, self.pad)), mode = 'constant', constant_values = 0)
 
         # Call Conv1d_stride1
-        # TODO
+        Z = self.conv1d_stride1.forward(A)
 
         # downsample
-        Z = None  # TODO
+        Z = self.downsample1d.forward(Z)
 
-        return NotImplemented
+        return Z
 
     def backward(self, dLdZ):
         """
@@ -97,12 +124,12 @@ class Conv1d():
             dLdA (np.array): (batch_size, in_channels, input_size)
         """
         # Call downsample1d backward
-        # TODO
+        dLdA = self.downsample1d.backward(dLdZ)
 
         # Call Conv1d_stride1 backward
-        dLdA = None  # TODO
+        dLdA = self.conv1d_stride1.backward(dLdA)  # TODO
 
         # Unpad the gradient
-        # TODO
+        gradient = dLdA[..., self.pad: dLdA.shape[2] - self.pad]
 
-        return NotImplemented
+        return gradient

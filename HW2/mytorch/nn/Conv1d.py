@@ -40,13 +40,11 @@ class Conv1d_stride1():
         """
         self.A = A
         Z = np.zeros((self.A.shape[0], self.W.shape[0], self.A.shape[2] - self.W.shape[2] + 1))
-        for i in range(self.A.shape[0]): # for every datapoint
-            for j in range(Z.shape[2]): # for z_j, as stride = 1, only scan size Z times.
-                tmp = self.A[i, ..., j:j + self.W.shape[2]] # get the current slice of A
-
-                 # tmp (1, input_channel, slice_size(kernel_size)), W (output_channel, input_channel, kernel_size)
-                Z[i,...,j] = np.tensordot(tmp, self.W, axes = ([0, 1],[1, 2])) # Z (batch_size, out_channels, output_size)
-
+        # for every datapoint
+        for i in range(Z.shape[2]): # for every slice
+            tmp = self.A[..., i:i + self.W.shape[2]] # get the current slice of A
+            # tmp (batch_size, input_channel, slice_size(kernel_size)), W (output_channel, input_channel, kernel_size)
+            Z[...,i] = np.tensordot(tmp, self.W, axes = ([1, 2],[1, 2])) # Z (batch_size, out_channels, output_size)
         return Z + self.b.reshape(1, self.b.shape[0], 1)
 
     def backward(self, dLdZ):
@@ -60,12 +58,11 @@ class Conv1d_stride1():
         self.dLdW = np.zeros(self.W.shape)
 
         # calculate dLdW
-        for i in range(self.A.shape[0]):
-            tmp_dLdW = np.zeros(self.W.shape)
-            for j in range(self.dLdW.shape[2]):
-                tmp = self.A[i, ..., j:j + dLdZ.shape[2]] # tmp (input_channel, slice_size(dLdZ output_size))
-                tmp_dLdW[..., j] = np.tensordot(dLdZ[i], tmp, axes = (1,1)) # dLdZ(out_channels, output_size), dLdW(output_channel, input_channel, kernel_size)
-            self.dLdW = self.dLdW + tmp_dLdW
+
+        for i in range(self.dLdW.shape[2]):
+            tmp = self.A[..., i:i + dLdZ.shape[2]] # tmp (batch_size, input_channel, slice_size(dLdZ output_size))
+            self.dLdW[..., i] = np.tensordot(dLdZ, tmp, axes=([0, 2], [0, 2])) # dLdZ(batch_size, out_channels, output_size), dLdW(output_channel, input_channel, kernel_size)
+
         # calculate dLdb
         # dLdb (output_channel, )
         self.dLdb = np.sum(dLdZ, axis = (0,2))
@@ -77,11 +74,10 @@ class Conv1d_stride1():
         padded_dLdZ[..., self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[2]] = dLdZ # pad dLdZ, each side for each channel, pad kernel_size - 1 zeros.
         Flipped_W = self.W[..., ::-1]
 
-        for i in range(padded_dLdZ.shape[0]): # for each data point
-            for j in range(dLdA.shape[2]):
-                tmp = padded_dLdZ[i, ..., j:j + Flipped_W.shape[2]] # tmp (output_channel, kernel_size)
-                dLdA[i, ..., j] = np.tensordot(tmp, Flipped_W, axes = ([0, 1],[0, 2])) #Flipped_W(output_channel, input_channel, kernel_size)
 
+        for i in range(dLdA.shape[2]):
+            tmp = padded_dLdZ[..., i:i + Flipped_W.shape[2]] # tmp (batch_size, output_channel, kernel_size)
+            dLdA[..., i] = np.tensordot(tmp, Flipped_W, axes = ([1, 2],[0, 2])) #Flipped_W(output_channel, input_channel, kernel_size)
         return dLdA
 
 

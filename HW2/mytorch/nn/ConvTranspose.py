@@ -54,8 +54,8 @@ class ConvTranspose2d():
         self.upsampling_factor = upsampling_factor
 
         # Initialize Conv2d() isntance
-        self.conv2d_stride1 = Upsample2d(upsampling_factor)
-        self.upsample2d = Conv2d_stride1(in_channels, out_channels, kernel_size, weight_init_fn, bias_init_fn)
+        self.conv2d_stride1 = Conv2d_stride1(in_channels, out_channels, kernel_size, weight_init_fn, bias_init_fn)
+        self.upsample2d = Upsample2d(upsampling_factor)
 
     def forward(self, A):
         """

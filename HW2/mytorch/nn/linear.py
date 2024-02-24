@@ -20,7 +20,9 @@ class Linear:
         :return: Output Z of linear layer with shape (N, C1)
         Read the writeup for implementation details
         """
+
         self.A = A
+
         self.N = A.shape[0]  # store the batch size of input
         # Think how will self.Ones helps in the calculations and uncomment below
         self.Ones = np.ones((self.N, 1))

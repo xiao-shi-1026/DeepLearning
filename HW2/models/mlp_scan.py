@@ -21,20 +21,22 @@ class CNN_SimpleScanningMLP():
         # self.conv3 = ???
         # ...
         # <---------------------
-        self.conv1 = None
-        self.conv2 = None
-        self.conv3 = None
-        self.layers = [] # TODO: Add the layers in the correct order
+        # in_channels, out_channels, kernel_size, stride, padding = 0, weight_init_fn=None, bias_init_fn=None
+        self.conv1 = Conv1d(24, 8, 8, 1)
+        self.conv2 = Conv1d(8, 16, 1, 1)
+        self.conv3 = Conv1d(16, 4, 1, 4)
+        self.layers = [self.conv1, ReLU(), self.conv2, ReLU(), self.conv3, Flatten()] # TODO: Add the layers in the correct order
 
     def init_weights(self, weights):
         # Load the weights for your CNN from the MLP Weights given
         # w1, w2, w3 contain the weights for the three layers of the MLP
         # Load them appropriately into the CNN
-
+        # W (output_channel, input_channel, kernel_size)
         w1, w2, w3 = weights
-        self.conv1.conv1d_stride1.W = None
-        self.conv2.conv1d_stride1.W = None
-        self.conv3.conv1d_stride1.W = None
+
+        self.conv1.conv1d_stride1.W = w1.reshape(8, 24, 8).transpose(2,1,0)
+        self.conv2.conv1d_stride1.W = w2.reshape(1, 8, 16).transpose(2,1,0)
+        self.conv3.conv1d_stride1.W = w3.reshape(1, 16, 4).transpose(2,1,0)
 
     def forward(self, A):
         """
@@ -74,10 +76,11 @@ class CNN_DistributedScanningMLP():
         # self.conv3 = ???
         # ...
         # <---------------------
-        self.conv1 = None
-        self.conv2 = None
-        self.conv3 = None
-        self.layers = [] # TODO: Add the layers in the correct order
+        # in_channels, out_channels, kernel_size, stride, padding = 0, weight_init_fn=None, bias_init_fn=None
+        self.conv1 = Conv1d(24, 2, 2, 2)
+        self.conv2 = Conv1d(2, 8, 2, 2)
+        self.conv3 = Conv1d(8, 4, 2, 1)
+        self.layers = [self.conv1, ReLU(), self.conv2, ReLU(), self.conv3, Flatten()] # TODO: Add the layers in the correct order
 
     def __call__(self, A):
         # Do not modify this method
@@ -87,12 +90,13 @@ class CNN_DistributedScanningMLP():
         # Load the weights for your CNN from the MLP Weights given
         # w1, w2, w3 contain the weights for the three layers of the MLP
         # Load them appropriately into the CNN
-
+        # W (output_channel, input_channel, kernel_size)
+        # (batch_size, in_channels, input_size)
         w1, w2, w3 = weights
-        self.conv1.conv1d_stride1.W = None
-        self.conv2.conv1d_stride1.W = None
-        self.conv3.conv1d_stride1.W = None
 
+        self.conv1.conv1d_stride1.W = w1[0:48, 0:2].reshape(2, 24, 2).transpose(2,1,0)
+        self.conv2.conv1d_stride1.W = w2[0:4, 0:8].reshape(2, 2, 8).transpose(2,1,0)
+        self.conv3.conv1d_stride1.W = w3.reshape(2, 8, 4).transpose(2,1,0)
     def forward(self, A):
         """
         Do not modify this method

@@ -40,6 +40,7 @@ class Conv1d_stride1():
         """
         self.A = A
         Z = np.zeros((self.A.shape[0], self.W.shape[0], self.A.shape[2] - self.W.shape[2] + 1))
+
         # for every datapoint
         for i in range(Z.shape[2]): # for every slice
             tmp = self.A[..., i:i + self.W.shape[2]] # get the current slice of A
@@ -123,7 +124,7 @@ class Conv1d():
         dLdA = self.downsample1d.backward(dLdZ)
 
         # Call Conv1d_stride1 backward
-        dLdA = self.conv1d_stride1.backward(dLdA)  # TODO
+        dLdA = self.conv1d_stride1.backward(dLdA)
 
         # Unpad the gradient
         gradient = dLdA[..., self.pad: dLdA.shape[2] - self.pad]

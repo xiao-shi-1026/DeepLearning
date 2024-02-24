@@ -62,10 +62,23 @@ class CNN(object):
         # self.flatten              (Flatten)     = Flatten()
         # self.linear_layer         (Linear)      = Linear(???)
         # <---------------------
+        self.convolutional_layers = []
+        self.linear_input_width = input_width
 
-        self.convolutional_layers = None
-        self.flatten = None
-        self.linear_layer = None
+        for i in range(self.nlayers):
+            if i == 0:
+                self.convolutional_layers.append(Conv1d(num_input_channels, num_channels[i], kernel_sizes[i], strides[i], 0, conv_weight_init_fn, bias_init_fn))
+            else:
+                self.convolutional_layers.append(Conv1d(num_channels[i - 1], num_channels[i], kernel_sizes[i], strides[i], 0, conv_weight_init_fn, bias_init_fn))
+            
+            self.linear_input_width = ((self.linear_input_width - kernel_sizes[i]) // strides[i]) + 1
+            
+        self.linear_input_width = self.linear_input_width * num_channels[-1]
+        
+        self.flatten = Flatten()
+        self.linear_layer = Linear(self.linear_input_width, num_linear_neurons)
+
+        self.linear_layer.W = linear_weight_init_fn(num_linear_neurons ,self.linear_input_width)
 
     def forward(self, A):
         """
@@ -81,6 +94,14 @@ class CNN(object):
 
         # Save output (necessary for error and loss)
         self.Z = A
+
+        for i in range(self.nlayers):
+            self.Z = self.convolutional_layers[i].forward(self.Z)
+            self.Z = self.activations[i].forward(self.Z)
+
+        self.Z = self.flatten.forward(self.Z)
+
+        self.Z = self.linear_layer.forward(self.Z)
 
         return self.Z
 
@@ -99,7 +120,11 @@ class CNN(object):
         # Your code goes here -->
         # Iterate through each layer in reverse order
         # <---------------------
-
+        grad = self.linear_layer.backward(grad)
+        grad = self.flatten.backward(grad)
+        for i in range(len(self.convolutional_layers) - 1, -1, -1):
+            grad = self.activations[i].backward(grad)
+            grad = self.convolutional_layers[i].backward(grad)
         return grad
 
     def zero_grads(self):

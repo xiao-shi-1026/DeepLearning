@@ -1015,6 +1015,7 @@ def test_convTranspose_2d_correctness():
 
     try:
         for i in range(3):
+
             assert(expected_res['conv_forward_res_list']
                    [i].shape == ep_fres_arr[i].shape)
             assert(expected_res['conv_backward_res_list']
@@ -1034,6 +1035,7 @@ def test_convTranspose_2d_correctness():
         print("Failed ConvTranspose2d Test")
         print('-' * 20)
         traceback.print_exc()
+
         return False
 
 ##########################################################################
@@ -1400,6 +1402,7 @@ def test_simple_scanning_mlp():
         allow_pickle=True)
     result = cnn.forward(data)
 
+
     try:
         assert(isinstance(result, type(expected_result)))
         assert(result.shape == expected_result.shape)
@@ -1410,6 +1413,8 @@ def test_simple_scanning_mlp():
         print('-' * 20)
         return True
     except Exception as e:
+        
+        print('-' * 20)
         print("Simple Scanning MLP:" + "FAIL")
         traceback.print_exc()
         print('-' * 20)
@@ -1525,7 +1530,6 @@ class CNN_model(nn.Module):
         x = torch.relu(x)
         x = self.conv3(x)
         x = torch.sigmoid(x)
-
         x = self.flatten(x)
         x = self.fc(x)
 

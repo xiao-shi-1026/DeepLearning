@@ -43,9 +43,10 @@ class Conv2d_stride1():
         
         for i in range(Z.shape[2]):
             for j in range(Z.shape[3]): # for every slice
+                
                 tmp = self.A[..., i:i + self.W.shape[2], j:j + self.W.shape[3]]
-                # tmp (batch_size, input_channel, slice_size(kernel_size)), W (output_channel, input_channel, kernel_size)
-                Z[...,i,j] = np.tensordot(tmp, self.W, axes = ([1, 2, 3],[1, 2, 3])) # Z (batch_size, out_channels, output_size)
+
+                Z[...,i,j] = np.tensordot(tmp, self.W, axes = ([1, 2, 3],[1, 2, 3]))
         
         return Z + self.b.reshape(1, self.b.shape[0], 1, 1)
 
@@ -74,7 +75,7 @@ class Conv2d_stride1():
         dLdA = np.zeros(self.A.shape)
         padded_dLdZ = np.zeros((dLdZ.shape[0], dLdZ.shape[1], dLdA.shape[2] + self.kernel_size - 1, dLdA.shape[3] + self.kernel_size - 1))
 
-        padded_dLdZ[..., self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[2], self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[3]] = dLdZ # pad dLdZ, each side for each channel, pad kernel_size - 1 zeros.
+        padded_dLdZ[..., self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[2], self.kernel_size - 1: self.kernel_size - 1 + dLdZ.shape[3]] = dLdZ
         Flipped_W = self.W[..., ::-1, ::-1]
 
 

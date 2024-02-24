@@ -67,7 +67,7 @@ class Tanh:
         return: 
             A: Post-activation values
         """
-        self.A = (np.exp(Z) - np.exp(-Z)) / (np.exp(Z) + np.exp(-Z))
+        self.A = np.tanh(Z)
         return self.A
     
     def backward(self, dLdA: np.array) -> np.array:

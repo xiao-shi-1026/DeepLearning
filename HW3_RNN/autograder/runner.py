@@ -97,6 +97,7 @@ test_list = {
         {'title': 'Section 5.2 - Beam Search',
         'autolab': 'Beam',
         'test': search_test.test_beam_search,
+
         'score': 15
         }
     ]

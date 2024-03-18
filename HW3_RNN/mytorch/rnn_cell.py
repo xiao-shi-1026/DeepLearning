@@ -71,7 +71,6 @@ class RNNCell(object):
 
         h_t = self.activation.forward(np.dot(x, self.W_ih.T) + self.b_ih + np.dot(h_prev_t, self.W_hh.T) + self.b_hh)
 
-        # return h_t
         return h_t
 
     def backward(self, delta, h_t, h_prev_l, h_prev_t):

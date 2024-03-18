@@ -20,7 +20,7 @@ class Linear:
         self.A    = A
         self.N    = A.shape[0]
         self.Ones = np.ones((self.N,1), dtype="f")
-        Z         = self.A @ self.W.T + self.Ones @ self.b.T
+        Z         = self.A @ self.W.T + self.Ones * self.b.T
         
         return Z
         

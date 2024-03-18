@@ -86,7 +86,15 @@ class GRUCell(object):
         """
         self.x = x
         self.hidden = h_prev_t
-        
+        # calculate reset gate
+        self.r = self.r_act.forward(np.dot(self.x, self.Wrx.T) + self.brx + np.dot(self.hidden, self.Wrh.T) + self.brh)
+        # calculate update gate
+        self.z = self.z_act.forward(np.dot(self.x, self.Wzx.T) + self.bzx + np.dot(self.hidden, self.Wzh.T) + self.bzh)
+        # calculate input
+        self.n = self.h_act.forward(np.dot(self.x, self.Wnx.T) + self.bnx + (np.dot(self.hidden, self.Wnh.T) + self.bnh) * self.r)
+        # new hidden state at current time-step
+        h_t = self.z * self.hidden + (1 - self.z) * self.n
+
         # Add your code here.
         # Define your variables based on the writeup using the corresponding
         # names below.
@@ -99,8 +107,7 @@ class GRUCell(object):
         assert self.n.shape == (self.h,)
         assert h_t.shape == (self.h,) # h_t is the final output of you GRU cell.
 
-        # return h_t
-        raise NotImplementedError
+        return h_t
 
     def backward(self, delta):
         """GRU cell backward.
@@ -130,9 +137,46 @@ class GRUCell(object):
         # 2) When in doubt about shapes, please refer to the table in the writeup.
         # 3) Know that the autograder grades the gradients in a certain order, and the local autograder will tell you which gradient you are currently failing.
         
+        # For new hidden state
+        dz = delta * (self.hidden - self.n)
+        dn = delta * (1 - self.z)
+       
+        # For input calculation
+        self.dWnx = np.outer(self.h_act.backward(dn, self.n).T, self.x)
+        self.dbnx = self.h_act.backward(dn, self.n)
+        dr = self.h_act.backward(dn, self.n) * (np.dot(self.hidden, self.Wnh.T) + self.bnh)
+        self.dWnh = np.outer(self.h_act.backward(dn, self.n) * self.r, self.hidden)
+        self.dbnh = self.h_act.backward(dn, self.n) * self.r
         
+        # For Update Gate
+        self.dWzx = np.outer(self.z_act.backward(dz).T, self.x)
+        self.dbzx = self.z_act.backward(dz)
+        self.dWzh = np.outer(self.z_act.backward(dz).T, self.hidden)
+        self.dbzh = self.z_act.backward(dz)
+        
+        # For Reset Gate
+        self.dWrx = np.outer(self.r_act.backward(dr).T, self.x)
+        self.dbrx = self.r_act.backward(dr)
+        self.dWrh = np.outer(self.r_act.backward(dr).T, self.hidden)
+        self.dbrh = self.r_act.backward(dr)
+        
+        # dx
+        dndx = self.h_act.backward(dn, self.n) @ self.Wnx
+        dzdx = self.z_act.backward(dz) @ self.Wzx
+        drdx = self.r_act.backward(dr) @ self.Wrx
+
+        dx = dndx + dzdx + drdx
+
+        # dh
+        dh_hprev = self.z
+        # Notice: if (A @ B)*C, dB = C.T * A 
+        dndh = self.r * self.h_act.backward(dn, self.n) @ self.Wnh
+        dzdh = self.z_act.backward(dz) @ self.Wzh
+        drdh = self.r_act.backward(dr) @ self.Wrh
+        dh_prev_t = delta * dh_hprev + dndh + dzdh + drdh
+
         assert dx.shape == (self.d,)
         assert dh_prev_t.shape == (self.h,)
 
-        # return dx, dh_prev_t
-        raise NotImplementedError
+        return dx, dh_prev_t
+

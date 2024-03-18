@@ -173,6 +173,7 @@ class GRUCell(object):
         dndh = self.r * self.h_act.backward(dn, self.n) @ self.Wnh
         dzdh = self.z_act.backward(dz) @ self.Wzh
         drdh = self.r_act.backward(dr) @ self.Wrh
+        
         dh_prev_t = delta * dh_hprev + dndh + dzdh + drdh
 
         assert dx.shape == (self.d,)

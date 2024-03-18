@@ -45,16 +45,19 @@ class CTC(object):
             extended_symbols.append(self.BLANK)
 
         N = len(extended_symbols)
-
-        # -------------------------------------------->
-        # TODO
-        # <---------------------------------------------
+        print(extended_symbols)
+        skip_connect = [0] * N
+        for i in range(1, N - 2):
+            if extended_symbols[i] == self.BLANK & extended_symbols[i - 1] != extended_symbols[i + 1]:
+                skip_connect[i + 1] = 1
+            else:
+                skip_connect[i + 1] = 0
 
         extended_symbols = np.array(extended_symbols).reshape((N,))
         skip_connect = np.array(skip_connect).reshape((N,))
 
-        # return extended_symbols, skip_connect
-        raise NotImplementedError
+        return extended_symbols, skip_connect
+
 
 
     def get_forward_probs(self, logits, extended_symbols, skip_connect):

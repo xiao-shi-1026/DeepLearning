@@ -45,7 +45,6 @@ class CTC(object):
             extended_symbols.append(self.BLANK)
 
         N = len(extended_symbols)
-        print(extended_symbols)
         skip_connect = [0] * N
         for i in range(1, N - 2):
             if extended_symbols[i] == self.BLANK & extended_symbols[i - 1] != extended_symbols[i + 1]:
@@ -87,15 +86,24 @@ class CTC(object):
         S, T = len(extended_symbols), len(logits)
         alpha = np.zeros(shape=(T, S))
 
-        # -------------------------------------------->
-        # TODO: Intialize alpha[0][0]
-        # TODO: Intialize alpha[0][1]
-        # TODO: Compute all values for alpha[t][sym] where 1 <= t < T and 1 <= sym < S (assuming zero-indexing)
-        # IMP: Remember to check for skipConnect when calculating alpha
-        # <---------------------------------------------
 
-        # return alpha
-        raise NotImplementedError
+        # Intialize alpha[0][0]
+        alpha[0][0] = logits[0][extended_symbols[0]]
+        # Intialize alpha[0][1]
+        alpha[0][1] = logits[0][extended_symbols[1]]
+        # Compute all values for alpha[t][sym] where 1 <= t < T and 1 <= sym < S (assuming zero-indexing)
+        # IMP: Remember to check for skipConnect when calculating alpha
+        for t in range(1, T):
+            # The first row only effected by the previous time at the same row
+            alpha[t][0] = alpha[t - 1][0] * logits[t][extended_symbols[0]]
+            for s in range(1, S):
+                alpha[t][s] += alpha[t - 1][s - 1] + alpha[t - 1][s]
+                if s > 2 & skip_connect[s] == 1:
+                    alpha[t][s] += alpha[t - 1][s - 2]
+                alpha[t][s] *= logits[t][extended_symbols[0]]
+
+        return alpha
+
 
 
     def get_backward_probs(self, logits, extended_symbols, skip_connect):
@@ -125,12 +133,21 @@ class CTC(object):
         S, T = len(extended_symbols), len(logits)
         beta = np.zeros(shape=(T, S))
 
-        # -------------------------------------------->
-        # TODO
-        # <--------------------------------------------
+        beta[T - 1][S - 1] = logits[T - 1][extended_symbols[S - 1]]
+        beta[T - 1][S - 2] = logits[T - 1][extended_symbols[S - 2]]
+        for t in reversed(range(T - 2)):
+            beta[t][S - 1] = beta[t + 1][S - 1] * logits[t][extended_symbols[S - 1]]
+            for s in reversed(range(S - 2)):
+                beta[t][s] = (beta[t + 1][extended_symbols[s]] + beta[t + 1][extended_symbols[s + 1]])
+                if (s <= S - 3) & (skip_connect[s + 2] == 1):
+                    beta[t][s] += beta[t + 1][s + 2]
+                beta[t][s] *= logits[t][extended_symbols[s]]
 
-        # return beta
-        raise NotImplementedError
+        for t in reversed(range(T - 1)):
+            for s in reversed(range(S - 1)):
+                beta[t][s] /= logits[t][extended_symbols[s]]
+
+        return beta
 
 
     def get_posterior_probs(self, alpha, beta):
@@ -155,12 +172,15 @@ class CTC(object):
         gamma = np.zeros(shape=(T, S))
         sumgamma = np.zeros((T,))
         
-        # -------------------------------------------->
-        # TODO
-        # <---------------------------------------------
+        for t in range(T):
+            for s in range(S):
+                gamma[t][s] = alpha[t][s] * beta[t][s]
+                sumgamma[t] +=gamma[t][s]
+            
+            for i in range(S):
+                gamma[t][i] = gamma[t][i]/sumgamma[t]
 
-        # return gamma
-        raise NotImplementedError
+        return gamma
 
 
 class CTCLoss(object):

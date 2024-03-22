@@ -45,12 +45,12 @@ class CTC(object):
             extended_symbols.append(self.BLANK)
 
         N = len(extended_symbols)
+
+
         skip_connect = [0] * N
-        for i in range(1, N - 2):
-            if extended_symbols[i] == self.BLANK & extended_symbols[i - 1] != extended_symbols[i + 1]:
-                skip_connect[i + 1] = 1
-            else:
-                skip_connect[i + 1] = 0
+        for i in range(2, N):
+            if extended_symbols[i] != extended_symbols[i - 2]:
+                skip_connect[i] = 1
 
         extended_symbols = np.array(extended_symbols).reshape((N,))
         skip_connect = np.array(skip_connect).reshape((N,))
@@ -97,10 +97,10 @@ class CTC(object):
             # The first row only effected by the previous time at the same row
             alpha[t][0] = alpha[t - 1][0] * logits[t][extended_symbols[0]]
             for s in range(1, S):
-                alpha[t][s] += alpha[t - 1][s - 1] + alpha[t - 1][s]
-                if s > 2 & skip_connect[s] == 1:
+                alpha[t][s] = alpha[t - 1][s - 1] + alpha[t - 1][s]
+                if s > 1 and skip_connect[s] == 1:
                     alpha[t][s] += alpha[t - 1][s - 2]
-                alpha[t][s] *= logits[t][extended_symbols[0]]
+                alpha[t][s] *= logits[t][extended_symbols[s]]
 
         return alpha
 
@@ -135,16 +135,18 @@ class CTC(object):
 
         beta[T - 1][S - 1] = logits[T - 1][extended_symbols[S - 1]]
         beta[T - 1][S - 2] = logits[T - 1][extended_symbols[S - 2]]
-        for t in reversed(range(T - 2)):
+        for t in reversed(range(T - 1)):
+            
             beta[t][S - 1] = beta[t + 1][S - 1] * logits[t][extended_symbols[S - 1]]
-            for s in reversed(range(S - 2)):
-                beta[t][s] = (beta[t + 1][extended_symbols[s]] + beta[t + 1][extended_symbols[s + 1]])
-                if (s <= S - 3) & (skip_connect[s + 2] == 1):
+            
+            for s in reversed(range(S - 1)):
+                beta[t][s] = (beta[t + 1][s] + beta[t + 1][s + 1])
+                if (s <= S - 3) and (skip_connect[s + 2] == 1):
                     beta[t][s] += beta[t + 1][s + 2]
                 beta[t][s] *= logits[t][extended_symbols[s]]
 
-        for t in reversed(range(T - 1)):
-            for s in reversed(range(S - 1)):
+        for t in reversed(range(T)):
+            for s in reversed(range(S)):
                 beta[t][s] /= logits[t][extended_symbols[s]]
 
         return beta

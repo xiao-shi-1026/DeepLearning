@@ -154,6 +154,7 @@ class CTC(object):
 
     def get_posterior_probs(self, alpha, beta):
         """Compute posterior probabilities.
+        Gamma is quite interesting
 
         Input
         -----
@@ -222,15 +223,22 @@ class CTCLoss(object):
         -----
         logits [np.array, dim=(seq_length, batch_size, len(symbols)]:
             log probabilities (output sequence) from the RNN/GRU
+            The seq_length is the length of the longest sequence of all RNN/GRU output sequences.
 
         target [np.array, dim=(batch_size, padded_target_len)]:
             target sequences
+            The padded_target_len is the maximum length of the target sequences
+            If the padded_target_is four while the length of a target sequence is 3,
+            then this sequence is [a, b, c, 0], where a, b, c represents the indexes of the target phonemes
+            in the vocabulary.
 
         input_lengths [np.array, dim=(batch_size,)]:
             lengths of the inputs
+            The true length for each sequence in the batch.
 
         target_lengths [np.array, dim=(batch_size,)]:
             lengths of the target
+            The longest length of the target sequences in the batch.
 
         Returns
         -------
@@ -249,33 +257,45 @@ class CTCLoss(object):
         #####  Output losses should be the mean loss over the batch
 
         # No need to modify
+        # B is the batch size
         B, _ = target.shape
         total_loss = np.zeros(B)
         self.extended_symbols = []
 
         for batch_itr in range(B):
             # -------------------------------------------->
-            # Computing CTC Loss for single batch
+            # Computing CTC Loss for single batch, batch_itr represents the batch_itr th datapoint in this batch
             # Process:
             #     Truncate the target to target length
+            cur_target = target[batch_itr, : target_lengths[batch_itr]]
             #     Truncate the logits to input length
+            cur_logits = logits[: input_lengths[batch_itr], batch_itr, :]
             #     Extend target sequence with blank
+            extended_symbol, skip_connect = self.ctc.extend_target_with_blank(cur_target)
+            self.extended_symbols.append(extended_symbol)
             #     Compute forward probabilities
+            alpha = self.ctc.get_forward_probs(cur_logits, extended_symbol, skip_connect)
             #     Compute backward probabilities
+            beta = self.ctc.get_backward_probs(cur_logits, extended_symbol, skip_connect)
             #     Compute posteriors using total probability function
+            gamma = self.ctc.get_posterior_probs(alpha, beta)
+            self.gammas.append(gamma)
+            
             #     Compute expected divergence for each batch and store it in totalLoss
-            #     Take an average over all batches and return final result
-            # <---------------------------------------------
+            T = input_lengths[batch_itr]
+            N = target_lengths[batch_itr]
+            L = N*2 + 1
+            
+            for t in range(T):
+                for s in range(L): 
+                    total_loss[batch_itr] -= gamma[t][s] * np.log(cur_logits[t][extended_symbol[s]])
 
-            # -------------------------------------------->
-            # TODO
-            # <---------------------------------------------
-            pass
+            #     Take an average over all batches and return final result
+            
 
         total_loss = np.sum(total_loss) / B
 
-        # return total_loss
-        raise NotImplementedError
+        return total_loss
 
 
     def backward(self):
@@ -312,19 +332,25 @@ class CTCLoss(object):
         dY = np.full_like(self.logits, 0)
 
         for batch_itr in range(B):
-            # -------------------------------------------->
+
             # Computing CTC Derivative for single batch
             # Process:
-            #     Truncate the target to target length
             #     Truncate the logits to input length
+            cur_logits = self.logits[: self.input_lengths[batch_itr], batch_itr, :]
             #     Extend target sequence with blank
+            extended_symbol = self.extended_symbols[batch_itr]
             #     Compute derivative of divergence and store them in dY
-            # <---------------------------------------------
+            gamma = self.gammas[batch_itr]
+            
+            T = self.input_lengths[batch_itr]
+            N = self.target_lengths[batch_itr]
 
-            # -------------------------------------------->
-            # TODO
-            # <---------------------------------------------
-            pass
+            for t in range(T):
+                for i in range(2 * N+1):
+                    s_i = extended_symbol[i]
+                    g = gamma[t][i]
+                    y = cur_logits[t][s_i]
+                    dY[t][batch_itr][s_i] -= g/y
 
-        # return dY
-        raise NotImplementedError
+        return dY
+

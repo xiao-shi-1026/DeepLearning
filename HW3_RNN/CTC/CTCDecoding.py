@@ -44,16 +44,30 @@ class GreedySearchDecoder(object):
         decoded_path = []
         blank = 0
         path_prob = 1
-
-        # TODO:
+        B = y_probs.shape[2]
         # 1. Iterate over sequence length - len(y_probs[0])
         # 2. Iterate over symbol probabilities
         # 3. update path probability, by multiplying with the current max probability
         # 4. Select most probable symbol and append to decoded_path
         # 5. Compress sequence (Inside or outside the loop)
 
-        #return decoded_path, path_prob
-        raise NotImplementedError
+        for t in range(y_probs.shape[1]):
+            path_prob *= np.max(y_probs[:, t, :])
+            decoded_path.append(np.argmax(y_probs[:, t, :]))
+
+        # compress
+        compressed = []
+        for i in range(len(decoded_path)):
+            if decoded_path[i] != blank:
+                if i == 0 or decoded_path[i] != decoded_path[i - 1]:
+                    compressed.append(decoded_path[i])
+
+        decoded_path = []
+        for i in compressed:
+            decoded_path.append(self.symbol_set[i - 1])
+        
+        decoded_path = ''.join(decoded_path)
+        return decoded_path, path_prob
 
 
 class BeamSearchDecoder(object):
@@ -102,7 +116,30 @@ class BeamSearchDecoder(object):
 
         T = y_probs.shape[1]
         bestPath, FinalPathScore = None, None
-        
-        
-        #return bestPath, FinalPathScore
-        raise NotImplementedError
+        for t in range(T):
+            if t == 0:
+                paths = [([], 1)]
+            else:
+                new_paths = []
+                for path, score in paths:
+                    for i in range(y_probs.shape[0]):
+                        new_path = path + [i]
+                        new_score = score * y_probs[i, t, 0]
+                        new_paths.append((new_path, new_score))
+                new_paths = sorted(new_paths, key=lambda x: x[1], reverse=True)
+                paths = new_paths[:self.beam_width]
+        bestPath, FinalPathScore = paths[0]
+
+        # compress
+        compressed = []
+        for i in range(len(bestPath)):
+            if bestPath[i] != 0:
+                if i == 0 or bestPath[i] != bestPath[i - 1]:
+                    compressed.append(bestPath[i])
+        bestPath = []
+        for i in compressed:
+            bestPath.append(self.symbol_set[i - 1])
+        bestPath = ''.join(bestPath)
+
+        return bestPath, FinalPathScore
+

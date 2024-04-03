@@ -53,16 +53,16 @@ class Attention:
             Argument(s)
             -----------
             
-            weights_keys (torch.tensor, dim = (D X D_k)): weight matrix for keys 
-            weights_queries (torch.tensor, dim = (D X D_k)): weight matrix for queries 
-            weights_values (torch.tensor, dim = (D X D_v)): weight matrix for values 
+            weights_keys (torch.tensor, dim = (D, D_k)): weight matrix for keys 
+            weights_queries (torch.tensor, dim = (D, D_k)): weight matrix for queries 
+            weights_values (torch.tensor, dim = (D, D_v)): weight matrix for values 
             
             """
 
             # Store the given weights as parameters of the class.
-            self.W_k    = # TODO
-            self.W_q    = # TODO
-            self.W_v    = # TODO
+            self.W_k    = weights_keys
+            self.W_q    = weights_queries
+            self.W_v    = weights_values
 
             # Use this object to perform softmax related operations.
             # It performs softmax over the last dimension which is what you'll need.
@@ -92,27 +92,29 @@ class Attention:
             self.X = X
         
             # Compute the values of Key, Query and Value
-
-            self.Q = # TODO
-            self.K = # TODO
-            self.V = # TODO
+            # torch.matmul() is used to calculate a batch wised dot product
+            # e.g.  X dim = (B, T, D), self.W_q dim = (D, D_k), self.Q = (B, T, D_k)
+            self.Q = torch.matmul(X, self.W_q)
+            self.K = torch.matmul(X, self.W_k)
+            self.V = torch.matmul(X, self.W_v)
 
             # Calculate unormalized Attention Scores (logits)
 
-            self.A_w    = # TODO
+            self.A_w    = torch.bmm(self.Q, self.K.transpose(1, 2))
 
             # Create additive causal attention mask and apply mask
             # Hint: Look into torch.tril/torch.triu and account for batch dimension
-
-            attn_mask    = # TODO
+            mask = torch.triu(torch.ones_like(self.A_w), diagonal=1)
+            
+            attn_mask    = torch.where(mask.bool(), torch.full_like(self.A_w, float('-inf')), self.A_w)
 
             # Calculate/normalize Attention Scores
 
-            self.A_sig   = # TODO
+            self.A_sig   = self.softmax.forward(attn_mask / (self.Q.shape[2] ** (1/2)) )
 
             # Calculate Attention context 
 
-            X_new         = # TODO
+            X_new         = torch.bmm(self.A_sig, self.V)
 
             return X_new
             
@@ -139,24 +141,24 @@ class Attention:
 
             # Derivatives wrt attention weights (raw and normalized)
 
-            dLdA_sig       = # TODO
-            dLdA_w         = # TODO
+            dLdA_sig       = torch.bmm(dLdXnew, self.V.transpose(1, 2))
+            dLdA_w         =  self.softmax.backward(dLdA_sig) * self.Q.shape[2] ** (-1/2)
 
             # Derivatives wrt keys, queries, and value
             
-            self.dLdV      = # TODO
-            self.dLdK      = # TODO
-            self.dLdQ      = # TODO
+            self.dLdV      = torch.bmm(self.A_sig.transpose(1, 2), dLdXnew)
+            self.dLdK      = torch.bmm(dLdA_w.transpose(1, 2), self.Q)
+            self.dLdQ      = torch.bmm(dLdA_w, self.K)
 
             # Dervatives wrt weight matrices
             # Remember that you need to sum the derivatives along the batch dimension.
 
-            self.dLdWq     = # TODO
-            self.dLdWv     = # TODO
-            self.dLdWk     = # TODO
+            self.dLdWq     = torch.bmm(self.X.transpose(1, 2), self.dLdQ).sum(dim = 0)
+            self.dLdWv     = torch.bmm(self.X.transpose(1, 2), self.dLdV).sum(dim = 0)
+            self.dLdWk     = torch.bmm(self.X.transpose(1, 2), self.dLdK).sum(dim = 0)
 
             # Derivative wrt input
 
-            dLdX      = # TODO
+            dLdX      = self.dLdV @ self.W_v.T + self.dLdK@self.W_k.T + self.dLdQ@self.W_q.T
 
             return dLdX

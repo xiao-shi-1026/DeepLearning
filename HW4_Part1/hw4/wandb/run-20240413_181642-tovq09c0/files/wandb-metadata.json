@@ -1,0 +1,52 @@
+{
+    "os": "Windows-10-10.0.22621-SP0",
+    "python": "3.11.5",
+    "heartbeatAt": "2024-04-13T22:16:49.615861",
+    "startedAt": "2024-04-13T22:16:42.882185",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "<python with no main file>",
+    "codePathLocal": null,
+    "git": {
+        "remote": "git@github.com:CMUxiaoshi/DeepLearning.git",
+        "commit": "fb659b7773f0276cb3c012cfc89f38274a1d51ae"
+    },
+    "email": "sx1194217713@gmail.com",
+    "root": "C:/Users/sx119/Desktop/DeepLearning",
+    "host": "Xiao",
+    "username": "sx119",
+    "executable": "c:\\Users\\sx119\\.conda\\envs\\mypytorch\\python.exe",
+    "cpu_count": 16,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 2400.0,
+        "min": 0.0,
+        "max": 2400.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2400.0,
+            "min": 0.0,
+            "max": 2400.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 933.0956993103027,
+            "used": 664.5618743896484
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 3080 Ti",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3080 Ti",
+            "memory_total": 12884901888
+        }
+    ],
+    "memory": {
+        "total": 31.796077728271484
+    }
+}

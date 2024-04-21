@@ -1,0 +1,7 @@
+{"DEVICE": "str", "DataLoaderForLanguageModeling": "type", "EOS_TOKEN": "int64", "LanguageModel": "type", "NUM_WORDS": "int", "RESUME_LOGGING": "bool", "SOS_TOKEN": "int64", "Trainer": "type", "USE_WANDB": "bool", "VOCAB": "ndarray", "arch_file": "TextIOWrapper", "concatenated_dataset": "ndarray", "config": "dict", "criterion": "CrossEntropyLoss", "dataset": "ndarray", "dl": "DataLoaderForLanguageModeling", "file_write": "int", "fixtures_gen_test": "ndarray", "fixtures_pred": "NpzFile", "fixtures_pred_test": "NpzFile", "gc": "module", "get_prediction_nll": "function", "i": "int", "inputs": "ndarray", "loader": "DataLoaderForLanguageModeling", "make_generation_text": "function", "model": "LanguageModel", "model_arch": "str", "np": "module", "openai": "module", "optimizer": "AdamW", "os": "module", "plt": "module", "rest": "int", "run": "Run", "run_id": "str", "run_name": "str", "scaler": "GradScaler", "scheduler": "ReduceLROnPlateau", "summary": "function", "targets": "ndarray", "time": "module", "torch": "module", "torchsummaryX": "module", "tqdm": "type", "trainer": "Trainer", "wandb": "module", "x": "ndarray", "y": "ndarray", "yaml": "module"}
+{"shape": "(2076864,)", "count": 2076864, "type": "ndarray"}
+{"shape": "", "count": 3, "type": "dict"}
+{"shape": "(579,)", "count": 579, "type": "ndarray"}
+{"shape": "(128, 31)", "count": 128, "type": "ndarray"}
+{"shape": "(32, 3)", "count": 32, "type": "ndarray"}
+[34m[1mwandb[39m[22m: [33mWARNING[39m Calling wandb.login() after wandb.init() has no effect.

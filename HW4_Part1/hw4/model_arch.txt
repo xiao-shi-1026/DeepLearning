@@ -1,0 +1,7 @@
+LanguageModel(
+  (token_embedding): Embedding(33280, 128)
+  (lstm_cells): ModuleList(
+    (0-1): 2 x LSTMCell(128, 128)
+  )
+  (token_probability): Linear(in_features=128, out_features=33280, bias=True)
+)
